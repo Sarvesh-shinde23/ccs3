@@ -1,35 +1,42 @@
 package main
 
 import (
-	"github.com/gin-gonic/gin"
-
 	"net/http"
 	"os"
+	"path/filepath"
+
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
 	r := gin.Default()
 
+	// Enable CORS and allow all origins
+	r.Use(cors.Default())
+
 	r.POST("/api/create", createFileOrFolder)
 
-	r.Run(":8000")
+	r.Run(":8080")
 }
 
 func createFileOrFolder(c *gin.Context) {
 	var req struct {
-		Path     string `json:"path"`
-		IsFolder bool   `json:"isFolder"`
+		RelativePath string `json:"path"`
+		IsFolder     bool   `json:"isFolder"`
 	}
 	if err := c.BindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	absolutePath := filepath.Join(".", req.RelativePath)
+
 	var err error
 	if req.IsFolder {
-		err = os.MkdirAll(req.Path, 0755)
+		err = os.MkdirAll(absolutePath, 0755)
 	} else {
-		_, err = os.Create(req.Path)
+		_, err = os.Create(absolutePath)
 	}
 
 	if err != nil {
