@@ -3,11 +3,15 @@ package main
 import (
 	"net/http"
 	"os"
-	"path/filepath"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
+
+var req struct {
+	Path     string `json:"path"`
+	IsFolder bool   `json:"isFolder"`
+}
 
 func main() {
 	r := gin.Default()
@@ -21,22 +25,17 @@ func main() {
 }
 
 func createFileOrFolder(c *gin.Context) {
-	var req struct {
-		RelativePath string `json:"path"`
-		IsFolder     bool   `json:"isFolder"`
-	}
+
 	if err := c.BindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
-	absolutePath := filepath.Join(".", req.RelativePath)
-
 	var err error
 	if req.IsFolder {
-		err = os.MkdirAll(absolutePath, 0755)
+		err = os.MkdirAll(req.Path, 0755)
 	} else {
-		_, err = os.Create(absolutePath)
+		_, err = os.Create(req.Path)
 	}
 
 	if err != nil {
